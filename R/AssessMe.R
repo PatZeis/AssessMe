@@ -1112,7 +1112,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 
 #' @import ggpubr
 #' @import dplyr
-#' @title differences in f1-score or entropy of individual genes
+#' @title Plot differences in f1-score or entropy of individual genes
 #' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with largest differences between the two assessments are highlighted.
 #' @param assessment1 assessment of a cluster partition for which either f1_score or Entropy computation has been performed based on a derived per gene cutoff.
 #' @param assessment2 assessment of a second partition derived for the same data.
@@ -1224,4 +1224,270 @@ plotfit_new <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=
   p <- ggpar(p, palette = palette, ggtheme = theme_classic())
   p
 }
+
+#' @title Plot function to determine optimal resolution parameter of community detection algorithms after cluster assessment.
+#' @description  After cluster assessment, this function serves to  optimize community detection clustering resolution parameter by highlighting resolution with maximal number of clusters with a user defined threshold and saturation point at which number increase of resolution only linearly decreases average number of detected outlier cells across clusters.
+#' @param assessment_list list of assessments for partitions of e.g. increasing resolution parameters of community detection methods.
+#' @param cex  numeric, graphical parameter indicating the amount by which the line connecting data points should be scaled. Default = 1.
+#' @param f1_thr numeric, threshold used to calculate how many clusters have at least 1 gene with F1-score above this threshold for different cluster partitions assessed. Default = 0.5.
+#' @param max_leng numeric, calculation of number of clusters with at least \code{max_leng} genes with minimal F1-score of \code{f1_thr} for the different cluster partitions assessed. Default = 3.
+#' @param lcol color used for highlighting the line connecting the data points. Default = “red”.
+#' @param resolu logical. If \code{T}. Calculates and highlights saturation point when number of average outlier cells decreases linear with increasing cluster number using two approaches:1) linear model of dependency of average number of outlier cells on the number of different clusters of the different assessed resolutions/cluster partitions. Resolution with the largest negative distance to the fit is highlighted as saturation point. 2) calculates saturation point using an elbow criterion. In addition, highlights the resolution with the maximal number of clusters with 1 gene and \code{max_leng} genes with F1-scores >= \code{f1_thr}. Default = \code{T}.
+#' @param sat2 logical. If \code{T}, resolution is fulfilling saturation criterion, if one of the next 3 resolutions also fulfills the saturation criterion.
+#' @return plot with 6 graphs, showing information about cluster partition against number of clusters and number of clusters against average F1-score, average Entropy, average No. of outlier genes across clusters, number of clusters with F1-scores >= \code{f1_thr} and number of clusters with \code{max_leng} genes with F1-score >= \code{f1_thr}.
+#'   \item{output_tab}{data.frame with with different resolutions/cluster partitions as rows and the following columns: “No.cluster” = number of assessed clusters, “mean_F1” = mean F1_Score across genes, “mean_Entropy” = mean Entropy across genes, “mean_No.cell_outlg1” = mean number of cells with 1 outlier gene expression across clusters, “No._cluster_F1_>=_f1thr”= number of clusters with at least 1 genes with F1 >= f1thr, “No._cluster_max_leng _genes_w._F1_>=_ f1thr “= number of clusters with at least max_leng genes with F1 >= f1thr, “F1_max_genes” = for every resolution, highest rank genes based on F1-score for clusters if F1>= f1thr.}
+#' @examples
+#' one_plot_output_F1_outlg_new(assess_seuratRC, f1_thr = 0.5, max_leng = 3, lcol = "red", resolu = T)
+#' @export
+one_plot_output_F1_outlg_new <- function(assesment_list, cex=1, f1_thr=0.5, max_leng=3, lcol="red", resolu=T, sat2=F) {
+
+  one_putput <- lapply(assesment_list, function(x) {
+    output <- c(No.cluster=length(x$cluster),mean_F1=mean(x$f1_score), mean_Entropy=mean(x$Entropy_thresh),mean_No.cell_outlg1=mean(x$outliertab[,1]))
+  })
+  output_tab <- data.frame(do.call(rbind, one_putput))
+  F1_output <- lapply(assesment_list, function(x){
+    F1_max_clus <- list()
+    max_cl <- x$max_cl
+    f1_score <- x$f1_score
+    cluster <- x$cluster
+    for ( i in 1:length(cluster) ){
+      F1_max_clus[[i]] <- f1_score[which(as.numeric(max_cl) == cluster[i])]
+    }
+    names(F1_max_clus) <- paste0("cl",cluster)
+    F1_max_clus <- lapply(F1_max_clus, function(x) {
+      x[order(x, decreasing = T)]
+    })
+    return(F1_max_clus)
+  })
+  ### for every clustering the max F1 score per cluster
+  F1_max <- lapply(F1_output, function(x) {
+    y <- lapply(x, function(z){
+      z[1]
+    })
+    y <- unlist(y)
+    y[is.na(y)] <- 0
+    y
+  })
+
+  F1_max_tab <- lapply(F1_max, function(x, f1_thr){
+    x[x >= f1_thr]
+  },f1_thr=f1_thr)
+  F1_max_tab <- unlist(lapply(F1_max_tab, function(x){
+    y <- names(x)
+    y <- paste(y, collapse = ",")
+  }))
+
+
+  F1_max_genes <- strsplit(F1_max_tab, split = ",")
+  F1_max_genes <- unlist(lapply(F1_max_genes, function(x) {
+    x <- gsub("cl\\d+\\.","",x)
+    x <- paste(x, collapse = ",")
+  }))
+
+  F1_max_thr_abs <- unlist(lapply(F1_max, function(x, f1_thr){
+    sum(x >= f1_thr)
+  },f1_thr=f1_thr))
+
+  output_tab <- cbind(output_tab, F1_max_thr_abs)
+  ### mean of top length()
+  F1_max_cl <- lapply(F1_output, function(x, lengi){
+    y <- lapply(x, function(z,lengi){
+      z[lengi]
+    }, lengi=lengi)
+    y <- unlist(y)
+    y[is.na(y)] <- 0
+    y
+  }, lengi=max_leng)
+
+  F1_max_cl_thr_abs <- unlist(lapply(F1_max_cl, function(x, f1_thr){
+    sum(x >= f1_thr)
+  },f1_thr=f1_thr))
+
+  output_tab <- cbind(output_tab, F1max_g_absthr=F1_max_cl_thr_abs, F1_max_tab=F1_max_tab, F1_max_genes=F1_max_genes )
+  colnames(output_tab)[5] <- paste("No._cluster_F1_>=", f1_thr, sep = "_")
+  colnames(output_tab)[6] <- paste("No._cluster", max_leng,"genes_w._F1_>=", f1_thr, sep = "_")
+
+  output_tab2 <- output_tab
+  output_tab <-  output_tab[,-((ncol(output_tab)-1): ncol(output_tab))]
+
+  maxi <- apply(output_tab, 2, max)
+  mini <- apply(output_tab, 2, min)
+  mini <- sapply(mini, function(x) {x-0.1*x})
+  maxi <- sapply(maxi, function(x) {x+0.1*x})
+  clus_range <- maxi[1]
+  par(mfrow=c(2,3))
+  for ( n in 1:ncol(output_tab)) {
+    if (n == 1) {
+      plot(output_tab[,n], type = "l", ylim = c(0,clus_range),ylab = colnames(output_tab)[n], xaxt="n", xlab="", col=lcol, lwd=2)
+      axis(1, at=1:length(assesment_list), labels = rownames(output_tab), las=2, cex.axis=cex )
+    }
+    else{
+      maxis <- maxi[n]
+      minis <- mini[n]
+      plot(x=output_tab[,1], type = "l", y=output_tab[,n],xlim = c(0,clus_range), ylim = c(minis, maxis),ylab = colnames(output_tab)[n], xlab="No. cluster", col=lcol, lwd=2)
+      if(resolu==T){
+        if ( n == 4) {
+          outlg <- as.numeric(output_tab[,n])
+          fit <- lm(outlg~as.numeric(output_tab[,1]))
+          resi <- which(residuals(fit) == min(residuals(fit)))
+          resi <- as.numeric(resi)
+          points(output_tab[,1][resi], output_tab[,n][resi],cex = 1.5,col = "green", pch=20)
+          text(output_tab[,1][resi], output_tab[,n][resi], labels = sub("S", "", rownames(output_tab)[resi]), cex = 1)
+          ### commented out for simplicity
+          outlier <- outlg/sum(outlg)
+          y <- outlier[-length(outlier)] - outlier[-1]
+          mm <- numeric(length(y))
+          nn <- numeric(length(y))
+          for (k in 1:length(y)) {
+            mm[k] <- mean(y[k:length(y)])
+            nn[k] <- sqrt(var(y[k:length(y)]))
+          }
+          ind <- which(y - (mm + nn) < 0)
+          if (sat2==T) {
+            for (p in ind) {
+              if (sum(p:(p + 3) %in% ind) >= 2) {
+                ind <- p
+                break
+              }
+            }
+            points(output_tab[,1][ind], output_tab[,n][ind],cex = 1.5,col = "blue", pch=20)
+            text(output_tab[,1][ind], output_tab[,n][ind], labels = sub("S", "", rownames(output_tab)[ind]), cex = 1)
+          }
+          else{
+            ind <- as.numeric(ind[1])
+            points(output_tab[,1][ind], output_tab[,n][ind],cex = 1.5,col = "blue", pch=20)
+            text(output_tab[,1][ind], output_tab[,n][ind], labels = sub("S", "", rownames(output_tab)[ind]), cex = 1)
+          }
+        }
+        if ( n %in% c(5,6)) {
+          f1f1max <- as.numeric(which(output_tab[,n] == max(output_tab[,n])))
+          points(output_tab[,1][f1f1max], output_tab[,n][f1f1max],cex = 1.5,col = "green", pch=20)
+          text(output_tab[,1][f1f1max], output_tab[,n][f1f1max], labels = sub("S", "", rownames(output_tab)[f1f1max]), cex = 1)
+        }
+
+      }
+
+    }
+  }
+  return(output_tab2)
+}
+
+#' @title Plot function to determine optimal pre-processing method.
+#' @description  After cluster assessment, this function serves to identify optimal pre-processing method, independent of the number of clusters, plotting the following criteria: average F1-Score, average Entropy, average number of outlier genes across cluster and average number of enriched features across clusters.
+#' @param assessment_list2 list of assessment lists exhibiting different assessments, for example: different normalization methods and for each increasing resolution parameters.
+#' @param cex = numeric, graphical parameter indicating the amount by which the line connecting the data points should be scaled. Default = 1
+#' @param f1_thr numeric, threshold used to calculate how many clusters have at least 1 gene with F1-score above this threshold for different cluster partitions assessed. Default = 0.5.
+#' @param max_leng numeric, calculation of number of clusters with at least \code{max_leng} genes with minimal F1-score of \code{f1_thr} for the different cluster partitions assessed. Default = 3.
+#' @param lcol = vector of colors used for highlighting slots of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.
+#' @param map = logical. If \code{T}, then legend is shown. Default = \code{T}.
+#' @param leg = logical. If \code{T}, then the legend is shown. Default = \code{T}.
+#' @examples
+#' one_plot_output_fix_new(assessment_list, lcol = c("red", "blue", "green"))
+#' @export
+one_plot_output_fix_new <- function(assesment_list2, cex=1, lcol=c("red"), map=T, leg=T) {
+  if (class(assesment_list2[[1]][[1]]) != "list") {
+    naming <- deparse(substitute(assesment_list2))
+    assesment_list2 <- list(assesment_list2)
+    names(assesment_list2) <- naming
+  }
+  output_list <- list()
+  for (i in 1:length(assesment_list2)) {
+    assesment_list <- assesment_list2[[i]]
+
+    one_putput <- lapply(assesment_list, function(x) {
+      output <- c(No.cluster=length(x$cluster),mean_F1=mean(x$f1_score), mean_Entropy=mean(x$Entropy_thresh),assessed_features=length(x$assessed_features),mean_enriched_features=mean(x$enriched_features),mean_No.cell_outlg1=mean(x$outliertab[,1]))
+    })
+    output_tab <- data.frame(do.call(rbind, one_putput))
+    output_list[[i]] <- output_tab
+  }
+  output_list2 <- output_list
+  names(output_list2) <- names(assesment_list2)
+  maxi <- lapply(output_list, function(x) {
+    apply(x, 2, max)
+  })
+  maxi <- do.call(rbind, maxi)
+  maxi <- apply(maxi, 2, max)
+  mini <- lapply(output_list, function(x) {
+    apply(x, 2, min)
+  })
+  mini <- do.call(rbind, mini)
+  mini <- apply(mini, 2, min)
+  mini <- sapply(mini, function(x) {x-0.1*x})
+  maxi <- sapply(maxi, function(x) {x+0.1*x})
+  clus_range <- maxi[1]
+  par(mfrow=c(2,3))
+  for ( n in 1:ncol(output_list[[1]])) {
+    if (n == 1 ) {
+      for ( i in 1:length(output_list)) {
+        if ( i == 1) {
+          if ( map == T) {
+            plot(x = 1:nrow(output_list[[1]]),y=output_list[[i]][,n], type = "l", ylim = c(0,clus_range),ylab = colnames(output_list[[i]])[n], xaxt="n", xlab="", col=lcol[i], lwd=2)
+            axis(1, at=1:length(assesment_list2[[i]]), labels = rownames(output_list[[i]]), las=2, cex.axis=cex ) }
+          else {
+            plot(x = 1:nrow(output_list[[1]]),y=output_list[[i]][,n], xlab=NA, ylab=NA, axes = FALSE, cex=0, pch=20)
+          }
+          if (length(output_list) > 1) {
+            if ( leg == T) {
+              legend("topright", names(assesment_list2), fill = lcol, cex=1, bty="n")}
+          }
+        }
+        else{
+          if ( map == T) {
+            lines(x = 1:nrow(output_list[[1]]), y=output_list[[i]][,n],  col=lcol[i], lwd=2)
+          }
+        }
+      }
+
+    }
+    else if ( n == 4) {
+      for ( i in 1:length(output_list)) {
+        if ( i == 1) {
+          maxis <- maxi[n]
+          minis <- mini[n]
+          if ( map == T) {
+            plot(x=1:nrow(output_list[[1]]),y=output_list[[i]][,n], type = "l",ylab = colnames(output_list[[i]])[n], xaxt="n", xlab="", col=lcol[i], lwd=2, ylim = c(minis, maxis))
+            axis(1, at=1:length(assesment_list2[[i]]), labels = rownames(output_list[[i]]), las=2, cex.axis=cex )
+          }
+          else {
+            plot(x=1:nrow(output_list[[1]]),y=output_list[[i]][,n], xlab=NA, ylab=NA, axes = FALSE, cex=0, pch=20)
+          }
+          if (length(output_list) > 1) {
+            if ( leg == T) {
+              legend("topright", names(assesment_list2), fill = lcol, cex=1, bty="n")}
+          }
+        }
+        else{
+          if ( map == T) {
+            lines(x = 1:nrow(output_list[[1]]), y=output_list[[i]][,n],  col=lcol[i], lwd=2)}
+        }
+      }
+
+    }
+    else{
+      for ( i in 1:length(output_list)) {
+        if ( i == 1) {
+          maxis <- maxi[n]
+          minis <- mini[n]
+          if ( map == T) {
+            plot(x=output_list[[i]][,1], type = "l", y=output_list[[i]][,n],xlim = c(0,clus_range), ylim = c(minis, maxis),ylab = colnames(output_list[[i]])[n], xlab="No. cluster", col=lcol[i], lwd=2)
+          }
+          else {
+            plot(x=output_list[[i]][,1], y=output_list[[i]][,n],xlab=NA, ylab=NA, axes = FALSE, cex=0, pch=20)
+          }
+          if (length(output_list) > 1) {
+            if ( leg == T) {
+              legend("topright", names(assesment_list2), fill = lcol, cex=1, bty="n")}
+          }
+
+        }
+        else{
+          if ( map == T) {
+            lines(x=output_list[[i]][,1], y=output_list[[i]][,n], col=lcol[i], lwd=2)   }
+        }
+      }
+    }
+  }
+  return(output_list2)
+}
+
 

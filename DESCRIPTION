@@ -1,13 +1,13 @@
 Package: AssessME
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person(given = "Patrice",
+Title: A cluster assessment tool for preprocessing and clustering optimization
+Version: 0.2
+Authors: person(given = "Patrice",
            family = "Zeis",
            role = c("aut", "cre"),
            email = "zeis@ie-freiburg.mpg.de",
            comment = c(ORCID = "0000-0001-7615-2201"))
-Description: What the package does (one paragraph).
+Maintainer: Patrice Zeis <zeis@ie-freiburg.mpg.de>
+Description: No method exists to comprehensively assess and compare the impact of different methods on clustering. Thus we introduce AssessME a tool for assessment and comparison of cluster partions based on different: filtering-, feature selection-, normalization-, batch correction- and imputation methods, or clustering algorithms and much more. 
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

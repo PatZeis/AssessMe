@@ -2,7 +2,7 @@
 % Please edit documentation in R/AssessMe.R
 \name{plotfit_new}
 \alias{plotfit_new}
-\title{differences in f1-score or entropy of individual genes}
+\title{Plot differences in f1-score or entropy of individual genes}
 \usage{
 plotfit_new(
   assessment1,
