@@ -8,7 +8,7 @@
 #' @import RcppProgress
 #' @import Matrix.utils
 #' @import future.apply
-##' @import future
+#' @import future
 #' @import ggpubr
 #' @import Seurat
 
