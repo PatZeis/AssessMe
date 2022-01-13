@@ -1113,8 +1113,9 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 
 #' @import ggpubr
 #' @import dplyr
+#' @import ggplot2
 #' @title Plot differences in f1-score or entropy of individual genes
-#' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with largest differences between the two assessments are highlighted.
+#' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.
 #' @param assessment1 assessment of a cluster partition for which either f1_score or Entropy computation has been performed based on a derived per gene cutoff.
 #' @param assessment2 assessment of a second partition derived for the same data.
 #' @param toplot plot either “F1” or “Entropy”. Differences of F1 or Entropy calculations of genes between the assessed cluster partitions. Default = "F1".
@@ -1201,18 +1202,18 @@ binaryclass_scatterplot <- function(assessment1, assessment2, maplot=F,toplot= "
   else {main <- "Entropy"}
   if (maplot) {
     if (!is.null(logmean)) {
-      p <- p + labs(x = paste(logmean, "Mean expression"), y = paste(toplot, "of" , sub(".+\\$","", deparse(substitute(assessment1))), "-", sub(".+\\$","", deparse(substitute(assessment2)))), title = main, color = "") +
+      p <- p + labs(x = paste(logmean, "Mean expression"), y = paste("/\\",toplot, "of" , paste(strsplit(deparse(substitute(assessment1)), "\\$" )[[1]][-1], collapse = "_"), "-", paste(strsplit(deparse(substitute(assessment2)), "\\$" )[[1]][-1], collapse = "_")), title = main, color = "") +
         geom_hline(yintercept = 0, color = "black") + geom_hline(yintercept = 0+sdfco, color = "red", linetype="dashed") +
         geom_hline(yintercept = 0-sdfco, color = "red", linetype="dashed")
     }
     else{
-      p <- p + labs(x = "Mean expression", y = paste(toplot, "of" , sub(".+\\$","", deparse(substitute(assessment1))), "-", sub(".+\\$","", deparse(substitute(assessment2)))), title = main, color = "") +
+      p <- p + labs(x = "Mean expression", y = paste("/\\",toplot, "of" , paste(strsplit(deparse(substitute(assessment1)), "\\$" )[[1]][-1], collapse = "_"), "-", paste(strsplit(deparse(substitute(assessment1)), "\\$" )[[1]][-1], collapse = "_")), title = main, color = "") +
         geom_hline(yintercept = 0, color = "black") + geom_hline(yintercept = 0+sdfco, color = "red", linetype="dashed") +
         geom_hline(yintercept = 0-sdfco, color = "red", linetype="dashed") }
   }
   else {
     if (is.null(xlabs) && is.null(ylabs)) {
-      p <- p + labs(x = sub(".+\\$","", deparse(substitute(assessment1))), y = sub(".+\\$","", deparse(substitute(assessment2))), title = main, color = "") +
+      p <- p + labs(x = paste(strsplit(deparse(substitute(assessment1)), "\\$" )[[1]][-1], collapse = "_"), y = paste(strsplit(deparse(substitute(assessment2)), "\\$" )[[1]][-1], collapse = "_"), title = main, color = "") +
         geom_abline(intercept = 0, slope = 1, color = "black") + geom_abline(intercept = 0+sdfco, slope = 1, color = "red", linetype="dashed") +
         geom_abline(intercept = 0-sdfco, slope = 1, color = "red", linetype="dashed") }
     else{
