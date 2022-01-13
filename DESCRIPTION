@@ -1,6 +1,6 @@
 Package: AssessME
 Title: A cluster assessment tool for preprocessing and clustering optimization
-Version: 0.2
+Version: 0.3
 Authors: person(given = "Patrice",
            family = "Zeis",
            role = c("aut", "cre"),

@@ -1125,9 +1125,9 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 #' @param maplot logical. If \code{T}, plot the F1 or Entropy per gene difference of assessment 1 and assessment 2 against the mean expression of the gene.
 #' @param logmean either “log2”, “log10” or NULL. If “log2” or “log10” performs log transformation of the mean expression per gene. Default = \code{NULL}.
 #' @examples
-#' plotfit_new(assessmentRC$Sres.1, assessmentRC$Sres.5, maplot = T, logmean = "log2", signifi = T)
+#' binaryclass_scatterplot(assessmentRC$Sres.1, assessmentRC$Sres.5, maplot = T, logmean = "log2", signifi = T)
 #' @export
-plotfit_new <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=F,out_doub_dif=NULL,  xlabs=NULL, ylabs=NULL, logmean=NULL){
+binaryclass_scatterplot <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=F,out_doub_dif=NULL,  xlabs=NULL, ylabs=NULL, logmean=NULL){
   if ( ! toplot %in% c("F1", "Entropy")) { stop("set to plot either to F1 or Entropy = T") }
   else if (toplot == "F1") {
     f1_1 <- assessment1$f1_score
@@ -1235,12 +1235,12 @@ plotfit_new <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=
 #' @param lcol color used for highlighting the line connecting the data points. Default = “red”.
 #' @param resolu logical. If \code{T}. Calculates and highlights saturation point when number of average outlier cells decreases linear with increasing cluster number using two approaches:1) linear model of dependency of average number of outlier cells on the number of different clusters of the different assessed resolutions/cluster partitions. Resolution with the largest negative distance to the fit is highlighted as saturation point. 2) calculates saturation point using an elbow criterion. In addition, highlights the resolution with the maximal number of clusters with 1 gene and \code{max_leng} genes with F1-scores >= \code{f1_thr}. Default = \code{T}.
 #' @param sat2 logical. If \code{T}, resolution is fulfilling saturation criterion, if one of the next 3 resolutions also fulfills the saturation criterion.
-#' @return plot with 6 graphs, showing information about cluster partition against number of clusters and number of clusters against average F1-score, average Entropy, average No. of outlier genes across clusters, number of clusters with F1-scores >= \code{f1_thr} and number of clusters with \code{max_leng} genes with F1-score >= \code{f1_thr}.
+#' @return plot with 6 graphs, plotting information about cluster partition against number of clusters and number of clusters against average F1-score, average Entropy, average No. of outlier genes across clusters, number of clusters with F1-scores >= \code{f1_thr} and number of clusters with \code{max_leng} genes with F1-score >= \code{f1_thr}.
 #'   \item{output_tab}{data.frame with with different resolutions/cluster partitions as rows and the following columns: “No.cluster” = number of assessed clusters, “mean_F1” = mean F1_Score across genes, “mean_Entropy” = mean Entropy across genes, “mean_No.cell_outlg1” = mean number of cells with 1 outlier gene expression across clusters, “No._cluster_F1_>=_f1thr”= number of clusters with at least 1 genes with F1 >= f1thr, “No._cluster_max_leng _genes_w._F1_>=_ f1thr “= number of clusters with at least max_leng genes with F1 >= f1thr, “F1_max_genes” = for every resolution, highest rank genes based on F1-score for clusters if F1>= f1thr.}
 #' @examples
-#' one_plot_output_F1_outlg_new(assess_seuratRC, f1_thr = 0.5, max_leng = 3, lcol = "red", resolu = T)
+#' opti_resolution_plot(assess_seuratRC, f1_thr = 0.5, max_leng = 3, lcol = "red", resolu = T)
 #' @export
-one_plot_output_F1_outlg_new <- function(assesment_list, cex=1, f1_thr=0.5, max_leng=3, lcol="red", resolu=T, sat2=F) {
+opti_resolution_plot <- function(assesment_list, cex=1, f1_thr=0.5, max_leng=3, lcol="red", resolu=T, sat2=F) {
 
   one_putput <- lapply(assesment_list, function(x) {
     output <- c(No.cluster=length(x$cluster),mean_F1=mean(x$f1_score), mean_Entropy=mean(x$Entropy_thresh),mean_No.cell_outlg1=mean(x$outliertab[,1]))
@@ -1304,12 +1304,9 @@ one_plot_output_F1_outlg_new <- function(assesment_list, cex=1, f1_thr=0.5, max_
     sum(x >= f1_thr)
   },f1_thr=f1_thr))
 
-  output_tab <- cbind(output_tab, F1max_g_absthr=F1_max_cl_thr_abs, F1_max_tab=F1_max_tab, F1_max_genes=F1_max_genes )
+  output_tab <- cbind(output_tab, F1max_g_absthr=F1_max_cl_thr_abs)
   colnames(output_tab)[5] <- paste("No._cluster_F1_>=", f1_thr, sep = "_")
   colnames(output_tab)[6] <- paste("No._cluster", max_leng,"genes_w._F1_>=", f1_thr, sep = "_")
-
-  output_tab2 <- output_tab
-  output_tab <-  output_tab[,-((ncol(output_tab)-1): ncol(output_tab))]
 
   maxi <- apply(output_tab, 2, max)
   mini <- apply(output_tab, 2, min)
@@ -1370,7 +1367,7 @@ one_plot_output_F1_outlg_new <- function(assesment_list, cex=1, f1_thr=0.5, max_
 
     }
   }
-  return(output_tab2)
+  return(cbind(output_tab,F1_max_tab=F1_max_tab, F1_max_genes=F1_max_genes ))
 }
 
 #' @title Plot function to determine optimal pre-processing method.
@@ -1382,10 +1379,12 @@ one_plot_output_F1_outlg_new <- function(assesment_list, cex=1, f1_thr=0.5, max_
 #' @param lcol = vector of colors used for highlighting slots of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.
 #' @param map = logical. If \code{T}, then legend is shown. Default = \code{T}.
 #' @param leg = logical. If \code{T}, then the legend is shown. Default = \code{T}.
+#' @return plot with 6 graphs, plotting information about cluster partition against number of clusters and number of assessed genes, as well as plotting number of clusters against average F1-score, average Entropy, average number of enriched features assessed and average No. of outlier genes across clusters.
+#'   \item{output_list}{with with data.frame for every list of assessments, with with different resolutions/cluster partitions as rows and the following columns: “No.cluster” = number of assessed clusters, “mean_F1” = mean F1_Score across genes, “mean_Entropy” = mean Entropy across genes, “mean_No.cell_outlg1” = mean number of cells with 1 outlier gene expression across clusters, "mean_enriched_features" = mean numer of enriched feautres across clusters of assessed features and "assessed_features" = Number of assessed features.}
 #' @examples
-#' one_plot_output_fix_new(assessment_list, lcol = c("red", "blue", "green"))
+#' opti_preprocess_plot(assessment_list, lcol = c("red", "blue", "green"))
 #' @export
-one_plot_output_fix_new <- function(assesment_list2, cex=1, lcol=c("red"), map=T, leg=T) {
+opti_preprocess_plot <- function(assesment_list2, cex=1, lcol=c("red"), map=T, leg=T) {
   if (class(assesment_list2[[1]][[1]]) != "list") {
     naming <- deparse(substitute(assesment_list2))
     assesment_list2 <- list(assesment_list2)
@@ -1401,8 +1400,7 @@ one_plot_output_fix_new <- function(assesment_list2, cex=1, lcol=c("red"), map=T
     output_tab <- data.frame(do.call(rbind, one_putput))
     output_list[[i]] <- output_tab
   }
-  output_list2 <- output_list
-  names(output_list2) <- names(assesment_list2)
+  names(output_list) <- names(assesment_list2)
   maxi <- lapply(output_list, function(x) {
     apply(x, 2, max)
   })
@@ -1488,7 +1486,7 @@ one_plot_output_fix_new <- function(assesment_list2, cex=1, lcol=c("red"), map=T
       }
     }
   }
-  return(output_list2)
+  return(output_list)
 }
 
 
