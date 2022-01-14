@@ -36,7 +36,7 @@ binaryclass_scatterplot(
 \item{logmean}{either “log2”, “log10” or NULL. If “log2” or “log10” performs log transformation of the mean expression per gene. Default = \code{NULL}.}
 }
 \description{
-This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with largest differences between the two assessments are highlighted.
+This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.
 }
 \examples{
 binaryclass_scatterplot(assessmentRC$Sres.1, assessmentRC$Sres.5, maplot = T, logmean = "log2", signifi = T)

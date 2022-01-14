@@ -10,8 +10,9 @@
 #' @import future.apply
 #' @import future
 #' @import ggpubr
+#' @import dplyr
+#' @import ggplot2
 #' @import Seurat
-
 
 #' @title AssessME - a cluster assessment tool for preprocessing and clustering optimisation
 #' @description tool for assessment and comparison of cluster partitions based on different:filtering, feature selection, normalization, batch correction, imputation, clustering algorithms
@@ -1111,9 +1112,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 
 }
 
-#' @import ggpubr
-#' @import dplyr
-#' @import ggplot2
+
 #' @title Plot differences in f1-score or entropy of individual genes
 #' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.
 #' @param assessment1 assessment of a cluster partition for which either f1_score or Entropy computation has been performed based on a derived per gene cutoff.
