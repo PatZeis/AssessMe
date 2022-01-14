@@ -13,6 +13,7 @@
 #' @import dplyr
 #' @import ggplot2
 #' @import Seurat
+#' @import RColorBrewer
 
 #' @title AssessME - a cluster assessment tool for preprocessing and clustering optimisation
 #' @description tool for assessment and comparison of cluster partitions based on different:filtering, feature selection, normalization, batch correction, imputation, clustering algorithms
