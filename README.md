@@ -55,7 +55,7 @@ for(i in 1:length(res)) {
 opti_resolution_plot(assess_seurat_entero, f1_thr = 0.5, max_leng = 3, lcol = "red", resolu = T)
 ```
 
-[Identifying resolution parameter sweet spot.](images/opti_resolution.png){#id .class width=700 height=525 }
+[Identifying resolution parameter sweet spot. -click to see image-](images/opti_resolution.png)
 ``` r
 goblet <- c("Tff3", "Manf", "Ccl9")
 middle <- c("Sox4", "Dll1")
@@ -68,7 +68,7 @@ marker_entero <- c(goblet, middle, A, SILA, SILP  , SAKD, ECReg4)
 binaryclass_scatterplot(assess_seurat_entero$Sres.2, assess_seurat_entero$Sres.6, out_doub_dif = marker_entero, maplot = T, logmean = "log2")
 ```
 
-[Identifying unresolved cell types by increasing resolution .](images/entero_scatter_F1.png){#id .class width=400 height=400 }
+[Identifying unresolved cell types by increasing resolution. -click to see image-](images/entero_scatter_F1.png)
 
 #### preprocessing of Tusi et al., count data of hemaptopoietic progenitors
 ``` r
@@ -168,7 +168,7 @@ assessment_list_sc <- list(seuratLog=assess_seuratLog, seuratRC=assess_seuratRC,
 preprocess <- opti_preprocess_plot(assessment_list_sc, lcol = c("red", "blue", "green"))
 ```
 
-[Assessment of different normalisation methods.](images/opti_preprocess.png){#id .class width=700 height=525 }
+[Assessment of different normalisation methods. -click to see image-](images/opti_preprocess.png)
 
 
 #### in-depth analysis RC and log-RC normalisation with the same resolution/No. clusters partitions
@@ -188,11 +188,11 @@ marker <- c(marker_monocytes, marker_granu_neutro, marker_dendritic, marker_lymp
 ``` r
 binaryclass_scatterplot(assessment_list_sc$seuratRC$Sres.2, assessment_list_sc$seuratLog$Sres.2, out_doub_dif = marker, maplot = T, logmean = "log2")
 ```
-![Library size normalisation leads to better resolution of hematopoietic progenitors  .](/Users/zeis/Desktop/AssessME/images/tusi_scatter_F1.png){#id .class width=400 height=400 }
+[Library size normalisation leads to better resolution of hematopoietic progenitors. -click to see image-](images/tusi_scatter_F1.png)
 
 ``` r
 binaryclass_scatterplot(assessment_list_sc$seuratRC$Sres.2, assessment_list_sc$seuratLog$Sres.2, out_doub_dif = marker, maplot = T, logmean = "log2", toplot = "Entropy")
 ```
 
-[Library size normalisation leads to better resolution of hematopoietic progenitors  .](images/tusi_scatter_entropy.png){#id .class width=400 height=400 }
+[Library size normalisation leads to better resolution of hematopoietic progenitors. -click to see image-](images/tusi_scatter_entropy.png)
 
