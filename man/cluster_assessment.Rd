@@ -63,21 +63,21 @@ cluster_assessment(
 )
 }
 \arguments{
-\item{assessment_list}{list, with named slots for different assessments, to which new assessment is added. Default is \code{NULL}.}
+\item{assessment_list}{list, with named objects for different assessments, to which new assessment is added. Default is \code{NULL}.}
 
 \item{seuratobject}{Seurat object as input for assessment:  derives UMI count object, normalized count object, cluster partition and variable features from Seurat Object. Default = \code{NULL}.}
 
-\item{seurat_assay}{if \code{seuratobject}, name of Seurat assay to retrieve slots. Default =”RNA”}
+\item{seurat_assay}{if \code{seuratobject}, name of Seurat assay to retrieve required objects. Default =”RNA”}
 
-\item{seurat_lib_size}{logical. If \code{FALSE} performs library size normalization of UMI counts slot of \code{seuratobject} and overwrites normalized data slot within assessment object. Default = \code{FALSE}.}
+\item{seurat_lib_size}{logical. If \code{FALSE} performs library size normalization of UMI counts object of \code{seuratobject} and overwrites normalized data object within assessment object. Default = \code{FALSE}.}
 
 \item{do.features}{logical. If \code{TRUE} performs feature selection and derives \code{var_feat_len} number of top variable genes. Default = \code{TRUE}.}
 
-\item{var_feat_len}{number of top variable genes used for cluster assessment, if \code{var_feat_len} not equivalent of the length of "var.features" slot of \code{seuratobject}, derive top \code{var_feat_len} number of feature genes using Seurat’s variance stabilization method, requires \code{seuratobject} and \code{do.features} needs to be set \code{TRUE}. Default = \code{NULL}.}
+\item{var_feat_len}{number of top variable genes used for cluster assessment, if \code{var_feat_len} not equivalent of the length of "var.features" object of \code{seuratobject}, derive top \code{var_feat_len} number of feature genes using Seurat’s variance stabilization method, requires \code{seuratobject} and \code{do.features} needs to be set \code{TRUE}. Default = \code{NULL}.}
 
 \item{RaceIDobject}{RaceID object as input for assessment: derives UMI count data of cells passing filtering criteria, normalized data, cluster partition, feature genes, background noise model describing the expression variance of genes as a function of their mean and RaceID filtering criteria. Default = \code{NULL}.}
 
-\item{RaceID_cl_table}{metadata data frame for a RaceID object in similar form as meta.data slot of a Seurat object with rows as cells and columns as e.g. different cluster partitions. Default = \code{NULL}.}
+\item{RaceID_cl_table}{metadata data frame for a RaceID object in similar form as meta.data object of a Seurat object with rows as cells and columns as e.g. different cluster partitions. Default = \code{NULL}.}
 
 \item{ScanpyobjectFullpath}{full path to scanpy object in h5ad format, which is converted to Seurat object from which UMI counts, cluster partition and feature genes are derived. Using UMI count data and scale factor, library size normalization is performed and scaled using the scale factor.}
 
@@ -174,7 +174,7 @@ cluster_assessment(
 \item{batch_entrop}{logical. If \code{T}, calculate the entropy of batches across cluster. Default = \code{F}.}
 }
 \value{
-List of assessments, with a named slot per assessment. Individual assessments represent a list with the following slots:
+List of assessments, with a named object per assessment. Individual assessments represent a list with the following objects:
 \item{rawdata}{Raw expression data matrix/UMI count matrix derived from input objects, with cells as columns and genes as rows in sparse matrix format.}
 \item{rowmean}{mean expression of assessed features.}
 \item{part}{vector containing cluster partition derived from input objects.}

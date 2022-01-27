@@ -15,7 +15,7 @@ opti_preprocess_plot(
 \arguments{
 \item{cex}{= numeric, graphical parameter indicating the amount by which the line connecting the data points should be scaled. Default = 1}
 
-\item{lcol}{= vector of colors used for highlighting slots of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.}
+\item{lcol}{= vector of colors used for highlighting objects of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.}
 
 \item{map}{= logical. If \code{T}, then legend is shown. Default = \code{T}.}
 

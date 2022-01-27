@@ -11,20 +11,21 @@
 #' @import future
 #' @import ggpubr
 #' @import dplyr
+#' @import tidyverse
 #' @import ggplot2
 #' @import Seurat
 #' @import RColorBrewer
 
 #' @title AssessME - a cluster assessment tool for preprocessing and clustering optimisation
 #' @description tool for assessment and comparison of cluster partitions based on different:filtering, feature selection, normalization, batch correction, imputation, clustering algorithms
-#' @param assessment_list list, with named slots for different assessments, to which new assessment is added. Default is \code{NULL}.
+#' @param assessment_list list, with named objects for different assessments, to which new assessment is added. Default is \code{NULL}.
 #' @param seuratobject Seurat object as input for assessment:  derives UMI count object, normalized count object, cluster partition and variable features from Seurat Object. Default = \code{NULL}.
-#' @param seurat_assay if \code{seuratobject}, name of Seurat assay to retrieve slots. Default =”RNA”
-#' @param seurat_lib_size logical. If \code{FALSE} performs library size normalization of UMI counts slot of \code{seuratobject} and overwrites normalized data slot within assessment object. Default = \code{FALSE}.
+#' @param seurat_assay if \code{seuratobject}, name of Seurat assay to retrieve required objects. Default =”RNA”
+#' @param seurat_lib_size logical. If \code{FALSE} performs library size normalization of UMI counts object of \code{seuratobject} and overwrites normalized data object within assessment object. Default = \code{FALSE}.
 #' @param do.features logical. If \code{TRUE} performs feature selection and derives \code{var_feat_len} number of top variable genes. Default = \code{TRUE}.
-#' @param var_feat_len number of top variable genes used for cluster assessment, if \code{var_feat_len} not equivalent of the length of "var.features" slot of \code{seuratobject}, derive top \code{var_feat_len} number of feature genes using Seurat’s variance stabilization method, requires \code{seuratobject} and \code{do.features} needs to be set \code{TRUE}. Default = \code{NULL}.
+#' @param var_feat_len number of top variable genes used for cluster assessment, if \code{var_feat_len} not equivalent of the length of "var.features" object of \code{seuratobject}, derive top \code{var_feat_len} number of feature genes using Seurat’s variance stabilization method, requires \code{seuratobject} and \code{do.features} needs to be set \code{TRUE}. Default = \code{NULL}.
 #' @param RaceIDobject RaceID object as input for assessment: derives UMI count data of cells passing filtering criteria, normalized data, cluster partition, feature genes, background noise model describing the expression variance of genes as a function of their mean and RaceID filtering criteria. Default = \code{NULL}.
-#' @param RaceID_cl_table metadata data frame for a RaceID object in similar form as meta.data slot of a Seurat object with rows as cells and columns as e.g. different cluster partitions. Default = \code{NULL}.
+#' @param RaceID_cl_table metadata data frame for a RaceID object in similar form as meta.data object of a Seurat object with rows as cells and columns as e.g. different cluster partitions. Default = \code{NULL}.
 #' @param ScanpyobjectFullpath full path to scanpy object in h5ad format, which is converted to Seurat object from which UMI counts, cluster partition and feature genes are derived. Using UMI count data and scale factor, library size normalization is performed and scaled using the scale factor.
 #' @param scanpy_clust either “leiden” or “louvain”, derives cluster partition of either Leiden or Louvain clustering. Default=”leiden”.
 #' @param scanpyscalefactor integer number with which relative cell counts are scaled to equal transcript counts. Default = 10,000.
@@ -72,7 +73,7 @@
 #' @param batch_entrop logical. If \code{T}, calculate the entropy of batches across cluster. Default = \code{F}.
 #' @param set.name set name for individual assessment within output of list of assessments. Default = \code{NULL} and name is given in the following way: if \code{seuratobject}, name is selected from metadata columns equal to Idents(), or character string given as input for givepart or character string of object name of numeric cluster partition. If \code{RaceIDobject}, name is given by character string given as input for givepart, character string of the object name of the number cluster partition or “Vdefault”.
 #' @param rawdata_null logical. If \code{TRUE}, do not store UMI count table in output of assessment, default = T
-#' @return List of assessments, with a named slot per assessment. Individual assessments represent a list with the following slots:
+#' @return List of assessments, with a named object per assessment. Individual assessments represent a list with the following objects:
 #'   \item{rawdata}{Raw expression data matrix/UMI count matrix derived from input objects, with cells as columns and genes as rows in sparse matrix format.}
 #'   \item{rowmean}{mean expression of assessed features.}
 #'   \item{part}{vector containing cluster partition derived from input objects.}
@@ -1113,6 +1114,108 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 
 }
 
+#' @title Test the robustness of clusters
+#' @description This function serves to explore the robustness of clusters of the cluster partition based on enriched genes, unique enriched genes, outlier genes, feature genes as well as, if assessed, shared enriched but differentially expressed genes.
+#' @param accuracy_list list of accuracy computations/n-fold cross validations, can be utilized in a for loop in order to combine different n-cross-validations for different assessments in one list. Otherwise different n-cross-validations can be combined later to a list which is subjected to the accuracy_plot function.
+#' @param giveassesment assessment object
+#' @param data count data (un-normalized) from which cells are sampled for cross validation. If \code{NULL}, count data is derived from \code{giveassessment}.
+#' @param cpart cluster partition. Default = \code{NULL} and partition retrieved from \code{giveassessment}.
+#' @param clustsize cluster size to be included for cross-validation. Default = \code{NULL} and cluster size is inferred from \code{giveassessment}.
+#' @param crossvali n number of subsampling to be done for cross-validation(n fold crossvalidation). Default = 50.
+#' @param features vector of features to be utilized for cross-validation. Default = \code{NULL}.
+#' @param ntree number of trees to grow for random forest based reclassification. Default = 200.
+#' @param loreg logical. If \code{T}, perform n-fold crossvalidation based on multionomial logistic regression. Default = \code{F}.
+#' @param set.name set name of list object for n-fold crossvalidation within accuracy list. Default = \code{NULL}.
+#' @return accuracy list with objects/lists for different accuracy computations e.g. for different cluster partitions. Every object representing a list with n-fold crossvalidation objects with fractions of reclassified/re-labelled cells matching the original cluster label with re-classification based on different gene lists derived from \code{giveassessment}.
+#' @examples
+#' accuracy_list <- accuracy(giveassessment = assess_seuratRC$Sres.1, data = entero@assays$RNA@counts)
+#' accuracy_list <- accuracy(accuracy_list = accuracy_list,giveassessment = assess_seuratRC$Sres.6, data = entero@assays$RNA@counts)
+#' @export
+accuracy <- function(accuracy_list=NULL, giveassessment = NULL, data=NULL,cpart=NULL,clustsize=NULL, crossvali=50,features=NULL,ntree=200, loreg=F, set.name=NULL ) {
+  if (is.null(accuracy_list)) {
+    accuracy_list <- list()
+  }
+  if (!is.null(giveassessment)){
+    assessment <- giveassessment
+    cpart <- assessment$part
+    clustsize <- assessment$clustsize
+    features <- assessment$features
+    if(!is.null(data)) {
+      data <- data
+    }
+    else if (!is.null(assessment$rawdata)) {
+      data <- assessment$rawdata
+    }
+    else {
+      stop("pleae include data object(=rawdata) or include rawdata in assessment by setting flag rawdata_null=F")
+    }
+  }
+  else {
+    if (is.null(cpart) || is.null(data) || is.null(clustsize) || is.null(features)) { stop("set cluster partition, count data, clustersize or features to evaluate")}
+  }
+  part <- as.numeric(names(table(cpart)[table(cpart) >= clustsize]))
+  cpart2 <- cpart[cpart %in% part]
+  rawdata <- data[,names(cpart2)]
+  label <- cpart2
+  uni_part <- part
+  sample_index <- list()
+  for ( i in 1:crossvali) {
+    cat(i)
+    sample_names <- c()
+    for ( n in 1:length(uni_part)){
+      sample_names <- c(sample_names, sample(names(label[label == uni_part[n]]), round(0.7*sum(label == uni_part[[n]])) ))}
+    sample_index[[i]] <- which(colnames(rawdata) %in% sample_names)
+  }
+  enriched_genes <- unique(Reduce(append, assessment$enriched_feature_list))
+  shared_2nd_diff <- unique(Reduce(append, assessment$list_2nd_diff))
+  unique_genes <- unique(Reduce(append, assessment$unique_feature_list))
+  outlier_genes <- unique(Reduce(append, assessment$outlier_genes))
+  if(!is.null(shared_2nd_diff)) {
+    gene_list <- list(enriched_genes=enriched_genes, unique_genes=unique_genes, unique_shared_2nd_diff=c(unique_genes,shared_2nd_diff), unique_outlier=unique(c(unique_genes,outlier_genes)),unique_shared_2nd_diff_outlier=unique(c(unique_genes,shared_2nd_diff, outlier_genes)),feature_genes=assessment$features)}
+  else{
+    gene_list <- list(enriched_genes=enriched_genes, unique_genes=unique_genes, unique_outlier=unique(c(unique_genes,outlier_genes)),feature_genes=assessment$features)
+  }
+  #return(gene_list)
+  nfold_cross_validation <- list()
+  for (n in 1:crossvali) {
+    cat(paste(n, "\n", sep = ""))
+    xtraining <- t(as.matrix(rawdata[,sample_index[[n]]]))
+    xtest <- t(as.matrix(rawdata[,-sample_index[[n]]]))
+    labeltraining <- label[sample_index[[n]]]
+    ori_labeltest <- label[-sample_index[[n]]]
+    if ( loreg) { xtraining <- data.frame(xtraining); xtraining <- cbind(xtraining, part=labeltraining)}
+    accuracy <- list()
+    for ( i in 1:length(gene_list)) {
+      cat(paste(names(gene_list)[i], "\n", sep = ""))
+      if(loreg) {
+        genes <- gene_list[[i]]
+        genes <- sub("-", ".", genes)
+        xtraining2 <- xtraining[,c(genes, "part")]}
+      else {
+        cat(paste(length(gene_list[[i]]),"_", sum(gene_list[[i]] %in% colnames(xtraining)), "\n", sep = ""))
+        xtraining2 <- xtraining[,gene_list[[i]]]}
+
+      xtest2 <- xtest[,gene_list[[i]]]
+      if ( loreg) {
+        model <- nnet::multinom(part ~., data = xtraining2, MaxNWts=24550)
+        predictions <- model %>% predict(xtest2)
+        accuracy[[i]] <- mean(predictions == ori_labeltest)
+        names(accuracy)[i] <- names(gene_list)[i]
+      }
+      else {
+        prediction <- randomForest::randomForest(xtraining2, as.factor(labeltraining), xtest2, ntree=ntree, importance=F, norm.votes=F)
+        prediction <- prediction$test$predicted
+        accuracy[[i]] <- mean(prediction == ori_labeltest)
+        names(accuracy)[i] <- names(gene_list)[i]}
+      cat(paste(names(gene_list)[i], "_done","\n", sep = ""))
+    }
+    nfold_cross_validation[[n]] <- accuracy
+  }
+  if(!is.null(set.name)) { accuracy_list[[set.name]] <- nfold_cross_validation}
+  else {accuracy_list[[sub(".+\\$", "", deparse(substitute(giveassessment)))]] <- nfold_cross_validation }
+
+  return(accuracy_list)
+}
 
 #' @title Plot differences in f1-score or entropy of individual genes
 #' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.
@@ -1377,7 +1480,7 @@ opti_resolution_plot <- function(assesment_list, cex=1, f1_thr=0.5, max_leng=3, 
 #' @param cex = numeric, graphical parameter indicating the amount by which the line connecting the data points should be scaled. Default = 1
 #' @param f1_thr numeric, threshold used to calculate how many clusters have at least 1 gene with F1-score above this threshold for different cluster partitions assessed. Default = 0.5.
 #' @param max_leng numeric, calculation of number of clusters with at least \code{max_leng} genes with minimal F1-score of \code{f1_thr} for the different cluster partitions assessed. Default = 3.
-#' @param lcol = vector of colors used for highlighting slots of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.
+#' @param lcol = vector of colors used for highlighting objects of list of assessments, for each list of lists of assessment one color: e.g. list of resolution optimizations for e.g. normalization A, and another color for list of resolution optimization for e.g. normalization B.
 #' @param map = logical. If \code{T}, then legend is shown. Default = \code{T}.
 #' @param leg = logical. If \code{T}, then the legend is shown. Default = \code{T}.
 #' @return plot with 6 graphs, plotting information about cluster partition against number of clusters and number of assessed genes, as well as plotting number of clusters against average F1-score, average Entropy, average number of enriched features assessed and average No. of outlier genes across clusters.
@@ -1490,4 +1593,20 @@ opti_preprocess_plot <- function(assesment_list2, cex=1, lcol=c("red"), map=T, l
   return(output_list)
 }
 
-
+#' @title Plot and compare the robustness of different clusters partitions
+#' @description This function plots the accuracy of re-classifications of the different cluster partitions tested based on enriched genes, unique enriched genes, outlier genes, feature genes as well as if assessed shared enriched but differentially expressed genes.
+#' @param accuracy_list list of accuracy computations/n-fold cross validations for e.g. different cluster partitions.
+#' @examples
+#' accuracy_plot(accuracy_list)
+#' @export
+accuracy_plot <- function(accuracy_list) {
+  reduced <- lapply(accuracy_list, function(x) { Reduce(rbind, x)})
+  gathered <- lapply(reduced, function(x) { gather(data.frame(x), gene_list, accuracy, enriched_genes:feature_genes, factor_key = TRUE)})
+  mutate <- lapply(seq_along(gathered), function(x, y, i) {
+    mutate(x[[i]], clustering=rep(y[[i]], nrow(x[[i]])) )}, y = names(gathered), x=gathered)
+  numeritas <- lapply(mutate, function(x) { x$accuracy <- as.numeric(x$accuracy); x})
+  comp <- Reduce(rbind, numeritas)
+  p2 <- ggplot(comp, aes(x=as.factor(clustering),y=accuracy ,fill=as.factor(clustering)))+
+    geom_boxplot() + labs(title="genes lists") +facet_wrap(~gene_list) + theme(axis.text.x = element_text(angle = 45))
+  print(p2)
+}

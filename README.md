@@ -196,3 +196,16 @@ binaryclass_scatterplot(assessment_list_sc$seuratRC$Sres.2, assessment_list_sc$s
 
 [Library size normalisation leads to better resolution of hematopoietic progenitors. -click to see image-](images/tusi_scatter_entropy.png)
 
+
+
+#### Test robustness of clusters
+``` r
+accuracy_list <- accuracy(giveassessment = assess_seurat_entero$Sres.1, data = entero@assays$RNA@counts, ntree = 100, crossvali = 50)
+accuracy_list <- accuracy(accuracy_list = accuracy_list,giveassessment = assess_seurat_entero$Sres.6, data = entero@assays$RNA@counts, ntree = 100, crossvali = 50)
+```
+
+#### Plot and compare robutness of different cluster partitions
+``` r
+accuracy_plot(accuracy_list)
+```
+[Comparison of accuracy of re-classification of cells of the different cluster partitions tested. -click to see image-](images/compare_accuracy.png)
