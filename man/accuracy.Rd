@@ -11,7 +11,6 @@ accuracy(
   cpart = NULL,
   clustsize = NULL,
   crossvali = 50,
-  features = NULL,
   ntree = 200,
   loreg = F,
   set.name = NULL
@@ -28,15 +27,15 @@ accuracy(
 
 \item{crossvali}{n number of subsampling to be done for cross-validation(n fold crossvalidation). Default = 50.}
 
-\item{features}{vector of features to be utilized for cross-validation. Default = \code{NULL}.}
-
 \item{ntree}{number of trees to grow for random forest based reclassification. Default = 200.}
 
 \item{loreg}{logical. If \code{T}, perform n-fold crossvalidation based on multionomial logistic regression. Default = \code{F}.}
 
 \item{set.name}{set name of list object for n-fold crossvalidation within accuracy list. Default = \code{NULL}.}
 
-\item{giveassesment}{assessment object}
+\item{giveassesment}{assessment object from \code{cluster_assessment} function.}
+
+\item{features}{vector of features to be utilized for cross-validation. Default = \code{NULL}.}
 }
 \value{
 accuracy list with objects/lists for different accuracy computations e.g. for different cluster partitions. Every object representing a list with n-fold crossvalidation objects with fractions of reclassified/re-labelled cells matching the original cluster label with re-classification based on different gene lists derived from \code{giveassessment}.

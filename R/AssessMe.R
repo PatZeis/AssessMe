@@ -1117,7 +1117,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 #' @title Test the robustness of clusters
 #' @description This function serves to explore the robustness of clusters of the cluster partition based on enriched genes, unique enriched genes, outlier genes, feature genes as well as, if assessed, shared enriched but differentially expressed genes.
 #' @param accuracy_list list of accuracy computations/n-fold cross validations, can be utilized in a for loop in order to combine different n-cross-validations for different assessments in one list. Otherwise different n-cross-validations can be combined later to a list which is subjected to the accuracy_plot function.
-#' @param giveassesment assessment object
+#' @param giveassesment assessment object from \code{cluster_assessment} function.
 #' @param data count data (un-normalized) from which cells are sampled for cross validation. If \code{NULL}, count data is derived from \code{giveassessment}.
 #' @param cpart cluster partition. Default = \code{NULL} and partition retrieved from \code{giveassessment}.
 #' @param clustsize cluster size to be included for cross-validation. Default = \code{NULL} and cluster size is inferred from \code{giveassessment}.
@@ -1131,7 +1131,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 #' accuracy_list <- accuracy(giveassessment = assess_seuratRC$Sres.1, data = entero@assays$RNA@counts)
 #' accuracy_list <- accuracy(accuracy_list = accuracy_list,giveassessment = assess_seuratRC$Sres.6, data = entero@assays$RNA@counts)
 #' @export
-accuracy <- function(accuracy_list=NULL, giveassessment = NULL, data=NULL,cpart=NULL,clustsize=NULL, crossvali=50,features=NULL,ntree=200, loreg=F, set.name=NULL ) {
+accuracy <- function(accuracy_list=NULL, giveassessment = NULL, data=NULL,cpart=NULL,clustsize=NULL, crossvali=50,ntree=200, loreg=F, set.name=NULL ) {
   if (is.null(accuracy_list)) {
     accuracy_list <- list()
   }
@@ -1175,7 +1175,6 @@ accuracy <- function(accuracy_list=NULL, giveassessment = NULL, data=NULL,cpart=
   else{
     gene_list <- list(enriched_genes=enriched_genes, unique_genes=unique_genes, unique_outlier=unique(c(unique_genes,outlier_genes)),feature_genes=assessment$features)
   }
-  #return(gene_list)
   nfold_cross_validation <- list()
   for (n in 1:crossvali) {
     cat(paste(n, "\n", sep = ""))
@@ -1216,6 +1215,123 @@ accuracy <- function(accuracy_list=NULL, giveassessment = NULL, data=NULL,cpart=
 
   return(accuracy_list)
 }
+
+#' @title Generate input for accuracy function on HPC systems
+#' @description helper function to generate input for accuracy function executed on a high performing computing cluster.
+#' @param assessment assessment object from \code{cluster_assessment} function.
+#' @param object RaceID or Seurat object from which count data is derived. Default = \code{NULL}.
+#' @param crossvali n number of subsampling to be done for cross-validation(n fold crossvalidation). Default = \code{NULL}.
+#' @param assessment_no index of assessment object within a list of assessments. Default = \code{NULL}.
+#' @param rawdata count data. Default = \code{NULL}.
+#' @param tosample percentage of cells to sample for the training set, per default 70% are sampled. Default = \code{NULL}.
+#' @examples
+#' tes_generate <- generate_input_accuracy(assessment=assessment_input, object=giveobject, crossvali=csvali, assessment_no = assess_index, rawdata = raw, tosample=sample2 )
+#' @export
+generate_input_accuracy_hpc <- function(assessment, object=NULL, crossvali=NULL, assessment_no=NULL, rawdata=NULL, tosample=NULL) {
+  if ( class(crossvali) == "function") { crossvali <- 50}
+  if ( class(tosample) == "function") { tosample <- 70}
+  output <- list()
+  if (class(assessment[[1]]) == "list") {
+    if (is.null(assessment_no)) { assessment_no <- 1}
+    else {
+      assessment <- assessment[[assessment_no]]}
+    output[["assessment"]] <- assessment
+    cpart <- assessment$part
+    clustsize <- assessment$clustsize
+  }
+  else{
+    output[["assessment"]] <- assessment
+    cpart <- assessment$part
+    clustsize <- assessment$clustsize
+  }
+  if (class(rawdata) != "function") {
+    rawdata <- rawdata ### redundant just to remember the class of omitted input
+  }
+  else if (class(object) == "Seurat") {
+    rawdata <- object@assays$RNA@counts
+  }
+  else if (class(object) == "SCseq") {
+    rawdata <- object@expdata[,names(object@cpart)]
+  }
+  else{
+    rawdata <- assessment$rawdata
+  }
+  if (is.null(rawdata)) {
+    stop("provide either Seurat object, RaceID object or count data object(can also be rawdata object of assessment)")
+  }
+  if( is.null(clustsize)) { clustsize <- 0}
+  part <- as.numeric(names(table(cpart)[table(cpart) >= clustsize]))
+  cpart2 <- cpart[cpart %in% part]
+  rawdata <- rawdata[,names(cpart2)]
+  label <- cpart2
+  uni_part <- part
+  sample_index <- list()
+  for ( i in 1:crossvali) {
+    cat(i)
+    sample_names <- c()
+    for ( n in 1:length(uni_part)){
+      sample_names <- c(sample_names, sample(names(label[label == uni_part[n]]), round((tosample/100)*sum(label == uni_part[[n]])) ))}
+    sample_index[[i]] <- which(colnames(rawdata) %in% sample_names)
+  }
+  output[["sample_index"]] <- sample_index
+  output[["label"]] <- label
+  output[["data"]] <- rawdata
+  return(output)
+}
+
+#' @title Test the robustness of clusters
+#' @description accuracy function to be executed on a high performing computing cluster system.
+#' @param generate output of generate_input_accuracy_hpc function.
+#' @param crossvali numeric index to iterate through indixes of n-fold sampled cells for training data.
+#' @param ntree number of trees to grow for random forest based reclassification.
+#' @param loreg logical. If \code{T}, perform n-fold crossvalidation based on multionomial logistic regression. Default = \code{F}.
+#' @examples
+#' give_accuracy <- accuracy(generate = tes_generate, crossvali = iterat, ntree = 100)
+#' @export
+accuracy_hpc <- function(generate,crossvali=iterat, ntree=200, loreg=F) {
+  assessment <- generate[["assessment"]]
+  rawdata <- generate[["data"]]
+  label <- generate[["label"]]
+  sample_index <- generate[["sample_index"]]
+  enriched_genes <- unique(Reduce(append, assessment$enriched_feature_list))
+  shared_2nd_diff <- unique(Reduce(append, assessment$list_2nd_diff))
+  unique_genes <- unique(Reduce(append, assessment$unique_feature_list))
+  outlier_genes <- unique(Reduce(append, assessment$outlier_genes))
+  if(!is.null(shared_2nd_diff)) {
+    gene_list <- list(enriched_genes=enriched_genes, unique_genes=unique_genes, unique_shared_2nd_diff=c(unique_genes,shared_2nd_diff), unique_outlier=unique(c(unique_genes,outlier_genes)),unique_shared_2nd_diff_outlier=unique(c(unique_genes,shared_2nd_diff, outlier_genes)),feature_genes=assessment$features)}
+  else{
+    gene_list <- list(enriched_genes=enriched_genes, unique_genes=unique_genes, unique_outlier=unique(c(unique_genes,outlier_genes)),feature_genes=assessment$features)
+  }
+  index <- sample_index[[crossvali]]
+  plan(multisession, workers=availableCores()/2)
+  nfold_cross_validation <- future_lapply(gene_list, function(x, index){
+    xtraining <- t(as.matrix(rawdata)[x,index])
+    xtest <- t(as.matrix(rawdata)[x,-index])
+    labeltraining <- label[index]
+    ori_labeltest <- label[-index]
+    if ( loreg) { xtraining <- data.frame(xtraining); xtraining <- cbind(xtraining, part=labeltraining)}
+    if(loreg) {
+      genes <- colnames(xtraining)
+      genes <- sub("-", ".", genes)
+      colnames(xtraining) <- genes}
+    else {
+      cat(paste(length(x),"_", sum(x %in% colnames(xtraining)), "\n", sep = ""))}
+    if ( loreg) {
+      model <- nnet::multinom(part ~., data = xtraining, MaxNWts=24550)
+      predictions <- model %>% predict(xtest)
+      accuracy <- mean(predictions == ori_labeltest)
+    }
+    else {
+      prediction <- randomForest::randomForest(xtraining, as.factor(labeltraining), xtest, ntree=ntree, importance=F, norm.votes=F)
+      prediction <- prediction$test$predicted
+      accuracy <- mean(prediction == ori_labeltest)}
+    return(accuracy)
+  }, index=index)
+  names(nfold_cross_validation) <- names(gene_list)
+  return(nfold_cross_validation)
+}
+
+
 
 #' @title Plot differences in f1-score or entropy of individual genes
 #' @description  This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.
