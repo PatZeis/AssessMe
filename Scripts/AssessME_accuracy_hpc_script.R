@@ -26,6 +26,6 @@ if (!is.null(opt$rawdata)) {
 sample2 <- opt$sampling
 iterat <- opt$iterator
 
-tes_generate <- generate_input_accuracy(assessment=assessment_input, object=giveobject, crossvali=csvali, assessment_no = assess_index, rawdata = raw, tosample=sample2 )
-give_accuracy <- accuracy(generate = tes_generate, crossvali = iterat, ntree = 100)
+tes_generate <- generate_input_accuracy_hpc(assessment=assessment_input, object=giveobject, crossvali=csvali, assessment_no = assess_index, rawdata = raw, tosample=sample2 )
+give_accuracy <- accuracy_hpc(generate = tes_generate, crossvali = iterat, ntree = 100)
 saveRDS(give_accuracy, paste("accuracy_", iterat, "_assessment", ".Rda", sep = ""))

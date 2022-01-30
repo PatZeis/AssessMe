@@ -39,7 +39,7 @@ while getopts 'a:j:t:i:c:p:e:r:g' flag; do  ### : behind flag = flag can have an
 done
 if [ "$logreg" = false ]
 then
-    Rscript --vanilla /home/zeis/accuracy_cluster.R -a $assess -j $object -i $assess_ind -t $iterator -c $cross -p $samp -e $tree -r $rawdata
+    Rscript --vanilla /home/zeis/AssessME_accuracy_hpc_script.R -a $assess -j $object -i $assess_ind -t $iterator -c $cross -p $samp -e $tree -r $rawdata
 else 
-    Rscript --vanilla /home/zeis/accuracy_cluster.R -a $assess -j $object -i $assess_ind -t $iterator -c $cross -p $samp -e $tree -g $logreg -r $rawdata
+    Rscript --vanilla /home/zeis/AssessME_accuracy_hpc_script.R -a $assess -j $object -i $assess_ind -t $iterator -c $cross -p $samp -e $tree -g $logreg -r $rawdata
 fi
