@@ -211,7 +211,7 @@ accuracy_plot(accuracy_list)
 [Comparison of accuracy of re-classification of cells of the different cluster partitions tested. -click to see image-](images/compare_accuracy.png)
 
 ### Calculate robustness of different cluster partitions and plot on a HPC system
-#### "assess_seurat_entero.Rda" = saved listed of assessments, "entero.RDa" saved Seurat object
+#### "assess_seurat_entero.Rda" = saved list of assessments, "entero.RDa" saved Seurat object
 ``` bash
 zeis@example:~$ mkdir res1
 zeis@example:~$ cd res1
