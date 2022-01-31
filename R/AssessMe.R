@@ -1244,8 +1244,8 @@ generate_input_accuracy_hpc <- function(assessment, object=NULL, crossvali=NULL,
     cpart <- assessment$part
     clustsize <- assessment$clustsize
   }
-  if (class(rawdata) != "function") {
-    rawdata <- rawdata ### redundant just to remember the class of omitted input
+  if (class(rawdata)[1] %in% c("dgCMatrix", "matrix", "data.frame")) {
+    rawdata <- rawdata
   }
   else if (class(object) == "Seurat") {
     rawdata <- object@assays$RNA@counts
@@ -1256,7 +1256,7 @@ generate_input_accuracy_hpc <- function(assessment, object=NULL, crossvali=NULL,
   else{
     rawdata <- assessment$rawdata
   }
-  if (is.null(rawdata)) {
+  if (!class(rawdata)[1] %in% c("dgCMatrix", "matrix", "data.frame")) {
     stop("provide either Seurat object, RaceID object or count data object(can also be rawdata object of assessment)")
   }
   if( is.null(clustsize)) { clustsize <- 0}
@@ -1718,6 +1718,23 @@ opti_preprocess_plot <- function(assesment_list2, cex=1, lcol=c("red"), map=T, l
 accuracy_plot <- function(accuracy_list) {
   reduced <- lapply(accuracy_list, function(x) { Reduce(rbind, x)})
   gathered <- lapply(reduced, function(x) { gather(data.frame(x), gene_list, accuracy, enriched_genes:feature_genes, factor_key = TRUE)})
+  mutate <- lapply(seq_along(gathered), function(x, y, i) {
+    mutate(x[[i]], clustering=rep(y[[i]], nrow(x[[i]])) )}, y = names(gathered), x=gathered)
+  numeritas <- lapply(mutate, function(x) { x$accuracy <- as.numeric(x$accuracy); x})
+  comp <- Reduce(rbind, numeritas)
+  p2 <- ggplot(comp, aes(x=as.factor(clustering),y=accuracy ,fill=as.factor(clustering)))+
+    geom_boxplot() + labs(title="genes lists") +facet_wrap(~gene_list) + theme(axis.text.x = element_text(angle = 45))
+  print(p2)
+}
+
+#' @title Plot and compare the robustness of different clusters partitions on hpc systems
+#' @description This function plots the accuracy of re-classifications of the different cluster partitions tested based on enriched genes, unique enriched genes, outlier genes, feature genes as well as if assessed shared enriched but differentially expressed genes.
+#' @param accuracy_list list of accuracy computations/n-fold cross validations for e.g. different cluster partitions.
+#' @examples
+#' accuracy_plot_hpc(accuracy_list)
+#' @export
+accuracy_plot_hpc <- function(accuracy_list) {
+  gathered <- lapply(accuracy_list, function(x) { gather(data.frame(x), gene_list, accuracy, enriched_genes:feature_genes, factor_key = TRUE)})
   mutate <- lapply(seq_along(gathered), function(x, y, i) {
     mutate(x[[i]], clustering=rep(y[[i]], nrow(x[[i]])) )}, y = names(gathered), x=gathered)
   numeritas <- lapply(mutate, function(x) { x$accuracy <- as.numeric(x$accuracy); x})

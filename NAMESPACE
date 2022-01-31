@@ -3,6 +3,7 @@
 export(accuracy)
 export(accuracy_hpc)
 export(accuracy_plot)
+export(accuracy_plot_hpc)
 export(binaryclass_scatterplot)
 export(cluster_assessment)
 export(generate_input_accuracy_hpc)

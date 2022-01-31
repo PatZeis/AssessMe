@@ -204,8 +204,21 @@ accuracy_list <- accuracy(giveassessment = assess_seurat_entero$Sres.1, data = e
 accuracy_list <- accuracy(accuracy_list = accuracy_list,giveassessment = assess_seurat_entero$Sres.6, data = entero@assays$RNA@counts, ntree = 100, crossvali = 50)
 ```
 
-#### Plot and compare robutness of different cluster partitions
+#### Plot and compare robustness of different cluster partitions
 ``` r
 accuracy_plot(accuracy_list)
 ```
 [Comparison of accuracy of re-classification of cells of the different cluster partitions tested. -click to see image-](images/compare_accuracy.png)
+
+### Calculate robustness of different cluster partitions and plot on a HPC system
+#### "assess_seurat_entero.Rda" = saved listed of assessments, "entero.RDa" saved Seurat object
+``` bash
+zeis@example:~$ mkdir res1
+zeis@example:~$ cd res1
+zeis@example:~/res1$ for i in {1..50}; do sbatch ~/AssessME_accuracy_hpc_bash_script.sh -a ~/assess_seurat_entero.Rda -j ~/entero.RDa -t $i -i 1; done
+zeis@example:~/res1$ cd ..
+zeis@example:~$ cd res6
+zeis@example:~/res6$ for i in {1..50}; do sbatch ~/AssessME_accuracy_hpc_bash_script.sh -a ~/assess_seurat_entero.Rda -j ~/entero.RDa -t $i -i 6; done
+zeis@example:~/res6$ cd ..
+zeis@example:~$ Rscript --vanilla ~/AssessME_accuracy_plot_hpc_script.R ~/res1/ ~/res6
+```
