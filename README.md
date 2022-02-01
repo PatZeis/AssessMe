@@ -222,5 +222,3 @@ zeis@example:~/res6$ for i in {1..50}; do sbatch ~/AssessME_accuracy_hpc_bash_sc
 zeis@example:~/res6$ cd ..
 zeis@example:~$ Rscript --vanilla ~/AssessME_accuracy_plot_hpc_script.R ~/res1/ ~/res6
 ```
-### test
-
