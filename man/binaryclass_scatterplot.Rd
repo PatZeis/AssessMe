@@ -13,7 +13,9 @@ binaryclass_scatterplot(
   out_doub_dif = NULL,
   xlabs = NULL,
   ylabs = NULL,
-  logmean = NULL
+  logmean = NULL,
+  size = NULL,
+  label.rectangle = F
 )
 }
 \arguments{
@@ -34,6 +36,10 @@ binaryclass_scatterplot(
 \item{ylabs}{character string for y-axis label indicating assessment 2. Default = \code{NULL} and label is derived from object name of assessment 2.}
 
 \item{logmean}{either “log2”, “log10” or NULL. If “log2” or “log10” performs log transformation of the mean expression per gene. Default = \code{NULL}.}
+
+\item{size}{numeric. Size of the label. Default = \code{NULL} and size is set to 2.}
+
+\item{label.rectangle}{logical. If \code{T}, text of labels is highlighted with a rectangle. Default = \code{F}.}
 }
 \description{
 This function serves to explore differences in f1-score or entropy of individual genes between different assessed cluster partitions. Genes with large differences between the two assessments are highlighted.

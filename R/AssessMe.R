@@ -1346,10 +1346,12 @@ accuracy_hpc <- function(generate,crossvali=iterat, ntree=200, loreg=F) {
 #' @param ylabs character string for y-axis label indicating assessment 2. Default = \code{NULL} and label is derived from object name of assessment 2.
 #' @param maplot logical. If \code{T}, plot the F1 or Entropy per gene difference of assessment 1 and assessment 2 against the mean expression of the gene.
 #' @param logmean either “log2”, “log10” or NULL. If “log2” or “log10” performs log transformation of the mean expression per gene. Default = \code{NULL}.
+#' @param size numeric. Size of the label. Default = \code{NULL} and size is set to 2.
+#' @param label.rectangle logical. If \code{T}, text of labels is highlighted with a rectangle. Default = \code{F}.
 #' @examples
 #' binaryclass_scatterplot(assessmentRC$Sres.1, assessmentRC$Sres.5, maplot = T, logmean = "log2", signifi = T)
 #' @export
-binaryclass_scatterplot <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=F,out_doub_dif=NULL,  xlabs=NULL, ylabs=NULL, logmean=NULL){
+binaryclass_scatterplot <- function(assessment1, assessment2, maplot=F,toplot= "F1",signifi=F,out_doub_dif=NULL,  xlabs=NULL, ylabs=NULL, logmean=NULL, size=NULL, label.rectangle=F){
   if ( ! toplot %in% c("F1", "Entropy")) { stop("set to plot either to F1 or Entropy = T") }
   else if (toplot == "F1") {
     f1_1 <- assessment1$f1_score
@@ -1409,16 +1411,26 @@ binaryclass_scatterplot <- function(assessment1, assessment2, maplot=F,toplot= "
                                                          "entropy"), "NS") %>% .[.lev]
   }
   data$sig <- factor(data$sig, labels = new.levels)
-
+  if (is.null(size)) {
+    size <- 2
+  }
   if(maplot) {
     p <- ggplot(data, aes(x = mean, y = diff)) + geom_point(aes(color = sig))
   }
   else {
     p <- ggplot(data, aes(x = f1_1, y = f1_2)) + geom_point(aes(color = sig)) }
-  p <- p + ggrepel::geom_text_repel(data = labs_data, mapping = aes(label = name),
-                                    box.padding = unit(0.35, "lines"), point.padding = unit(0.3,
-                                                                                            "lines"), force = 1, fontface = "plain",
-                                    size = 2, color = "black", max.overlaps = 200)
+  if (label.rectangle) {
+    p <- p + ggrepel::geom_label_repel(data = labs_data,
+                                       mapping = aes(label = name), box.padding = unit(0.35,
+                                                                                       "lines"), point.padding = unit(0.3, "lines"),
+                                       force = 1, fontface = "plain", size = size,
+                                       color = "black", max.overlaps = 200)
+  }
+  else{
+    p <- p + ggrepel::geom_text_repel(data = labs_data, mapping = aes(label = name),
+                                      box.padding = unit(0.35, "lines"), point.padding = unit(0.3,
+                                                                                              "lines"), force = 1, fontface = "plain",
+                                      size = size, color = "black", max.overlaps = 200)}
   if (toplot == "F1") { main <- "F1_score"}
   else {main <- "Entropy"}
   if (maplot) {
