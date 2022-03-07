@@ -340,9 +340,11 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     }
     if (f1Z == F) {
       feature_data <- ndata[rownames(ndata) %in% feature_genes,]
+      feature_genes <- rownames(feature_data)
     }
     else {
       feature_data <- rawdata[rownames(rawdata) %in% feature_genes,]
+      feature_genes <- rownames(feature_data)
     }
   }
 
