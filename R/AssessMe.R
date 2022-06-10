@@ -222,6 +222,9 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
   else {
     if (is.null(rawdata)) { stop("please provide rawcounts as rawdata")}
     if (is.null(givepart)) {stop("please provide cluster partition")}
+    else{
+      part <- givepart	    
+    }
     if ( norm==T) {
       cs <- apply(rawdata, 2, sum)
       ndata <- t(t(as.matrix(rawdata))/cs)
@@ -231,7 +234,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     }
     rawdata <- Matrix(as.matrix(rawdata), sparse = T)
     ndata <- Matrix(as.matrix(ndata), sparse = T)
-    if (is.null(givefeatures)){  ### feature selection only RaceID
+    if (is.null(givefeatures)){  ### feature selection only RaceID	    
       if (sum( as.numeric(fselectRace) + as.numeric(fselectSeurat)) == 2) { stop("either feature selection RaceID or Seurat")}
       if (sum( as.numeric(fselectRace) + as.numeric(fselectSeurat)) == 1) {
         fg <- rownames(rawdata)[apply(rawdata, 1, max , na.rm=T) >= minexpr]
