@@ -34,7 +34,7 @@
 #' @param norm performs library size normalization on provided rawdata argument. Default = \code{TRUE}.
 #' @param givepart clustering partition. Either a vector of integer cluster number for each cell in the same order as UMI count table or normalized count table for RaceIDobject; or a character string representing a column name of Seurat metadata data frame of a Seurat object or similar metadata frame, \code{RaceID_cl_table},for a RaceID object. Default = \code{NULL}.
 #' @param givefeatures gene vector to perform assessment. Default = \code{NULL}.
-#' @param minexpr minimum required transcript count of a gene across evaluated cells. Genes not passing criteria are filtered out. Default 5. If \code{RaceIDobject}, \code{minexpr} derived from  \code{RaceIDobject}. Relevant for deriving feature genes if \code{gene.domain} and calculating fit of dependency of mean on variance.
+#' @param minexpr minimum required transcript count of a gene in at least 1 evaluated cells. Genes not passing criteria are filtered out. Default 5. If \code{RaceIDobject}, \code{minexpr} derived from  \code{RaceIDobject}. Relevant for deriving feature genes if \code{gene.domain} and calculating fit of dependency of mean on variance.
 #' @param CGenes gene vector for genes to exclude from feature selection. Only relevant if \code{seuratobject} \code{&} \code{RaceIDobject} \code{&} \code{ScanpyobjectFullpath} = \code{NULL} and \code{rawdata} is given. Default = \code{NULL}.
 #' @param ccor integer value of correlation coefficient used as threshold for determining genes correlated to genes in \code{CGenes}. Only genes correlating less than \code{ccor} to all genes in \code{CGenes} are retained for analysis. Default = 0.65.
 #' @param fselectRace logical. If \code{True}, performs RaceID feature selection, only  if \code{seuratobject} \code{&} \code{RaceIDobject} \code{&} \code{ScanpyobjectFullpath} \code{&} \code{givefeatures} = \code{NULL}. Default = \code{False}.
@@ -263,7 +263,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
           bg <- fitbackground(as.matrix(ndata * min(apply(rawdata, 2, sum)))[genes, ] + 0.1)
           feature_genes <- bg$n
         }
-        else if (fselectSeurat){
+        else{
 
             if (is.null(var_feat_len)) stop("var_feat_len has to be set")
             if (!inherits(x = rawdata, "dgMatrix")) {
@@ -294,11 +294,12 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
 
 
         }
-        else{
-          stop("either fselectRace or fselectSeurat has to be set TRUE")
-        }
       }
-      else { stop("either fselect with RaceID or Seurat")}
+      else { 
+	      g <- apply(rawdata, 1, max , na.rm=T) >= minexpr
+	      feature_genes <- rownames(rawdata)[g] 
+      }  
+	      
     }
     else { feature_genes <- givefeatures}
   }
@@ -318,10 +319,10 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
   }
 
   if (gene.domain==T) {
-    if (!is.null(seuratobject) | !is.null(RaceIDobject) | !is.null(ScanpyobjectFullpath)) {
+    #if (!is.null(seuratobject) | !is.null(RaceIDobject) | !is.null(ScanpyobjectFullpath)) {
       g <- apply(rawdata, 1, max , na.rm=T) >= minexpr
       feature_genes <- rownames(rawdata)[g]
-    }
+    #}
     if (f1Z == F) { ### if cutoff is NOT expression = x>0
       feature_data <- ndata[feature_genes,]
     }
@@ -633,7 +634,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
         #fdata <- ndata * median(colSums(rawdata)) ## redundant
       }
       if (diffexp=="nbino") {
-        if ( !is.null(RaceIDobject) | sum(colSums(as.matrix(ndata))) == ncol(ndata) ) {
+        if ( !is.null(RaceIDobject) | sum(round(colSums(as.matrix(ndata)))) == ncol(ndata) ) {
           fdata <- ndata * median(colSums(rawdata))
         }
         else {
