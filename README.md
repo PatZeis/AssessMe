@@ -55,7 +55,10 @@ for(i in 1:length(res)) {
 opti_resolution_plot(assess_seurat_entero, f1_thr = 0.5, max_leng = 3, lcol = "red", resolu = T)
 ```
 
-[Identifying resolution parameter sweet spot. -click to see image-](images/opti_resolution.png)
+<h1 align="center"><img width="800px" src="images/opti_resolution.png"/></h1>
+
+
+
 ``` r
 goblet <- c("Tff3", "Manf", "Ccl9")
 middle <- c("Sox4", "Dll1")
@@ -68,7 +71,8 @@ marker_entero <- c(goblet, middle, A, SILA, SILP  , SAKD, ECReg4)
 binaryclass_scatterplot(assess_seurat_entero$Sres.2, assess_seurat_entero$Sres.6, out_doub_dif = marker_entero, maplot = T, logmean = "log2")
 ```
 
-[Identifying unresolved cell types by increasing resolution. -click to see image-](images/entero_scatter_F1.png)
+<h1 align="center"><img width="800px" src="images/entero_scatter_F1.png"/></h1>
+
 
 #### preprocessing of Tusi et al., count data of hemaptopoietic progenitors
 ``` r
@@ -188,14 +192,13 @@ marker <- c(marker_monocytes, marker_granu_neutro, marker_dendritic, marker_lymp
 ``` r
 binaryclass_scatterplot(assessment_list_sc$seuratRC$Sres.2, assessment_list_sc$seuratLog$Sres.2, out_doub_dif = marker, maplot = T, logmean = "log2")
 ```
-[Library size normalisation leads to better resolution of hematopoietic progenitors. -click to see image-](images/tusi_scatter_F1.png)
+<h1 align="center"><img width="800px" src="images/tusi_scatter_F1.png"/></h1>
 
 ``` r
 binaryclass_scatterplot(assessment_list_sc$seuratRC$Sres.2, assessment_list_sc$seuratLog$Sres.2, out_doub_dif = marker, maplot = T, logmean = "log2", toplot = "Entropy")
 ```
 
-[Library size normalisation leads to better resolution of hematopoietic progenitors. -click to see image-](images/tusi_scatter_entropy.png)
-
+<h1 align="center"><img width="800px" src="images/tusi_scatter_entropy.png"/></h1>
 
 
 #### Test robustness of clusters
@@ -208,7 +211,9 @@ accuracy_list <- accuracy(accuracy_list = accuracy_list,giveassessment = assess_
 ``` r
 accuracy_plot(accuracy_list)
 ```
-[Comparison of accuracy of re-classification of cells of the different cluster partitions tested. -click to see image-](images/compare_accuracy.png)
+
+<h1 align="center"><img width="800px" src="images/compare_accuracy.png"/></h1>
+
 
 ### Calculate robustness of different cluster partitions and plot on a HPC system
 #### "assess_seurat_entero.Rda" = saved list of assessments, "entero.RDa" saved Seurat object
