@@ -168,7 +168,7 @@ assessment_list_sc <- list(seuratLog=assess_seuratLog, seuratRC=assess_seuratRC,
 preprocess <- opti_preprocess_plot(assessment_list_sc, lcol = c("red", "blue", "green"))
 ```
 
-[Assessment of different normalisation methods. -click to see image-](images/opti_preprocess.png)
+<h1 align="center"><img width="450px" src="images/opti_preprocess.png"/></h1>
 
 
 #### in-depth analysis RC and log-RC normalisation with the same resolution/No. clusters partitions
