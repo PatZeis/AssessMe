@@ -119,7 +119,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
   start_time_assessment_complete <- Sys.time()
   if (!cutoff %in% c("mean", "median")) { stop("cutoff must be either mean or median")}
   if (sum(c(!is.null(seuratobject), !is.null(RaceIDobject), !is.null(ScanpyobjectFullpath))) > 1) { stop("please set only one object: either Seurat or RaceID or Scanpy")}
-  if (class(givepart) =="character") {
+  if (class(givepart) =="character" && length(givepart) == 1) {
     if (is.null(seuratobject) && is.null(RaceID_cl_table)) { stop("either seurat object or RaceID metadata dataframe/cluster dataframe(RaceID_cl_table can't be NULL) has to be provided") }
   }
   cat(paste("run_extraction", "\n"))
@@ -136,10 +136,10 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
       else {
         ndata <- seuratobject[[seurat_assay]]@data}
       if (is.null(givepart)) {
-        part <- as.numeric(seuratobject$seurat_clusters)} ### needs to be corrected later for 0-notation used by seurat
+        part <- as.character(seuratobject$seurat_clusters)} ### needs to be corrected later for 0-notation used by seurat
       else {
-        if (class(givepart) =="character") {part <- as.numeric(seuratobject@meta.data[,givepart]) }
-        else {part <- as.numeric(givepart)}
+        if (class(givepart) =="character") {part <- as.character(seuratobject@meta.data[,givepart]) }
+        else {part <- as.character(givepart)}
 
       }
       names(part) <- colnames(seuratobject)
@@ -185,14 +185,14 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     ndata <- RaceIDobject@ndata
     rawdata <- rawdata[,colnames(ndata)]
     if (is.null(givepart)) {
-      part <- RaceIDobject@cpart
-      if ( length(part) == 0) { part <- RaceIDobject@cluster$kpart }
+      part <- as.character(RaceIDobject@cpart)
+      if ( length(part) == 0) { part <- as.character(RaceIDobject@cluster$kpart) }
     } ### needs to be corrected later for 0-notation used by seurat
     else {
-      if (class(givepart) =="character") {
+      if (class(givepart) =="character" && length(givepart) == 1) {
         if(is.null(RaceID_cl_table)) { stop("please include table with different resolutions")}
         else {
-          part <- as.numeric(RaceID_cl_table[,givepart])
+          part <- as.character(RaceID_cl_table[,givepart])
           names(part) <- rownames(RaceID_cl_table)
         }
       }
@@ -213,8 +213,8 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     ndata <- t(t(rawdata)/colSums(rawdata) * scanpyscalefactor)
 
     if ( ! scanpy_clust %in% c("leiden", "louvain") ) { stop("set either leiden or louvain ")}
-    else { if  (scanpy_clust == "leiden") { part <- as.numeric(scanpy_object$leiden)}
-      if (scanpy_clust == "louvain") { part <- as.numeric(scanpy_object$louvain)}
+    else { if  (scanpy_clust == "leiden") { part <- as.character(scanpy_object$leiden)}
+      if (scanpy_clust == "louvain") { part <- as.character(scanpy_object$louvain)}
     }
     names(part) <- colnames(rawdata)
     feature_genes <- rownames(scanpy_object@assays$RNA@scale.data)
@@ -370,8 +370,8 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     start_time2 <- Sys.time()
 
     if (cutoff == "mean") {
-      agg <- aggregate.Matrix(t(feature_data), list(part), fun = "sum")[as.numeric(which(table(part) >= clustsize)),]
-      agg <- agg/as.numeric(table(part)[as.numeric(which(table(part) >= clustsize))])
+      agg <- aggregate.Matrix(t(feature_data), as.factor(as.character(part)), fun = "sum")[as.numeric(which(table(part) >= clustsize)),]
+      agg <- agg/as.numeric(table(part)[which(table(part) >= clustsize)])
     }
 
     if ( cutoff == "median") {
@@ -556,7 +556,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     start_time <- Sys.time()
 
     cutoff_data_table2 <- Matrix(cutoff_data_table, sparse = T)
-    agg2 <- aggregate.Matrix(t(cutoff_data_table2), list(part), fun = "sum")[as.numeric(which(table(part) >= clustsize)),]
+    agg2 <- aggregate.Matrix(t(cutoff_data_table2), as.factor(as.character(part)), fun = "sum")[which(table(part) >= clustsize),]
     end_time <- Sys.time()
 
     end_time <- Sys.time()
@@ -689,8 +689,8 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
               cat(paste(data_pos_2nd[k], "\n", sep=""))
               for ( n in 1:length(common_genes)) { ### to compare whether there is a signficant difference between the counts of the two, although enriched
                 #cat(paste0(common_genes[n], "\n"))
-                neg_nums <- as.numeric(ndata[common_genes[n],names(part)[part == as.numeric(colnames(data_2nd)[1])]])
-                pos_nums <- as.numeric(ndata[common_genes[n],names(part)[part == as.numeric(colnames(data_2nd)[k+1])]])
+                neg_nums <- as.numeric(ndata[common_genes[n],names(part)[part == colnames(data_2nd)[1]]])
+                pos_nums <- as.numeric(ndata[common_genes[n],names(part)[part == colnames(data_2nd)[k+1]]])
                 comp <- wilcox.test(neg_nums, pos_nums, alternative = "two.sided")
                 wilcox_pval <- c(wilcox_pval, comp$p.value)
               }
@@ -705,21 +705,21 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
           if (diffexp == "nbino") {
             pval_list <- list()
             m <- list()
-            m[[1]] <- rowMeans(fdata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[1])]])
+            m[[1]] <- rowMeans(fdata[common_genes,names(part)[part == colnames(data_2nd)[1]]])
             #v[[1]] <- matrixStats::rowVars(ndata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[1])]])
             for ( k in 1:length(data_pos_2nd)) {
               cat(paste(data_pos_2nd[k], "\n", sep=""))
-              m[[2]] <- rowMeans(fdata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[k+1])]])
+              m[[2]] <- rowMeans(fdata[common_genes,names(part)[part == colnames(data_2nd)[k+1]]])
               #v[[2]] <- matrixStats::rowVars(ndata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[k+1])]])
               pv <- apply(data.frame(m[[1]], m[[2]]), 1, function(x) {
-                p12 <- (dnbinom(0:round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])) + x[2] *
-                                          sum(part == as.numeric(colnames(data_2nd)[k+1])), 0), mu = mean(x) * sum(part == as.numeric(colnames(data_2nd)[1])), size = sum(part == as.numeric(colnames(data_2nd)[1])) *
-                                  sf(mean(x), vf, vfit))) * (dnbinom(round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])) +
-                                                                             x[2] * sum(part == as.numeric(colnames(data_2nd)[k+1])), 0):0, mu = mean(x) * sum(part == as.numeric(colnames(data_2nd)[k+1])),
-                                                                     size = sum(part == as.numeric(colnames(data_2nd)[k+1])) * sf(mean(x), vf, vfit)))
+                p12 <- (dnbinom(0:round(x[1] * sum(part == colnames(data_2nd)[1]) + x[2] *
+                                          sum(part == colnames(data_2nd)[k+1]), 0), mu = mean(x) * sum(part == colnames(data_2nd)[1]), size = sum(part == colnames(data_2nd)[1]) *
+                                  sf(mean(x), vf, vfit))) * (dnbinom(round(x[1] * sum(part == colnames(data_2nd)[1]) +
+                                                                             x[2] * sum(part == colnames(data_2nd)[k+1]), 0):0, mu = mean(x) * sum(part == colnames(data_2nd)[k+1]),
+                                                                     size = sum(part == colnames(data_2nd)[k+1]) * sf(mean(x), vf, vfit)))
                 if (sum(p12) == 0)
                   0
-                else sum(p12[p12 <= p12[round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])), 0) +
+                else sum(p12[p12 <= p12[round(x[1] * sum(part == colnames(data_2nd)[1]), 0) +
                                           1]])/(sum(p12))
               })
               pval_list[[k]] <- pv
@@ -740,8 +740,8 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
             wilcox_pval <- c()
             for ( n in 1:length(common_genes)) { ### to compare whether there is a signficant difference between the counts of the two, although enriched
               #cat(paste0(common_genes[n], "\n"))
-              neg_nums <- as.numeric(ndata[common_genes[n],names(part)[part == as.numeric(colnames(data_2nd)[1])]])# + rnorm(length(neg_nums))/1e+9
-              pos_nums <- as.numeric(ndata[common_genes[n],names(part)[part == as.numeric(colnames(data_2nd)[2])]])# + rnorm(length(pos_nums))/1e+9
+              neg_nums <- as.numeric(ndata[common_genes[n],names(part)[part == colnames(data_2nd)[1]]])# + rnorm(length(neg_nums))/1e+9
+              pos_nums <- as.numeric(ndata[common_genes[n],names(part)[part == colnames(data_2nd)[2]]])# + rnorm(length(pos_nums))/1e+9
               comp <- wilcox.test(neg_nums, pos_nums, alternative = "two.sided")
               wilcox_pval <- c(wilcox_pval, comp$p.value)}
             diffexp_2nd_rel <- c(diffexp_2nd_rel, sum(wilcox_pval < 0.05)/fraction_2nd[i])   ### relative fraction of shared genes differential expressed
@@ -752,17 +752,17 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
           if (diffexp == "nbino") {
             cat(paste(data_pos_2nd, "\n", sep=""))
             m <- list()
-            m[[1]] <- rowMeans(fdata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[1])]])
-            m[[2]] <- rowMeans(fdata[common_genes,names(part)[part == as.numeric(colnames(data_2nd)[2])]])
+            m[[1]] <- rowMeans(fdata[common_genes,names(part)[part == colnames(data_2nd)[1]]])
+            m[[2]] <- rowMeans(fdata[common_genes,names(part)[part == colnames(data_2nd)[2]]])
             pv <- apply(data.frame(m[[1]], m[[2]]), 1, function(x) {
-              p12 <- (dnbinom(0:round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])) + x[2] *
-                                        sum(part == as.numeric(colnames(data_2nd)[2])), 0), mu = mean(x) * sum(part == as.numeric(colnames(data_2nd)[1])), size = sum(part == as.numeric(colnames(data_2nd)[1])) *
-                                sf(mean(x), vf, vfit))) * (dnbinom(round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])) +
-                                                                           x[2] * sum(part == as.numeric(colnames(data_2nd)[2])), 0):0, mu = mean(x) * sum(part == as.numeric(colnames(data_2nd)[2])),
-                                                                   size = sum(part == as.numeric(colnames(data_2nd)[2])) * sf(mean(x), vf, vfit)))
+              p12 <- (dnbinom(0:round(x[1] * sum(part == colnames(data_2nd)[1]) + x[2] *
+                                        sum(part == colnames(data_2nd)[2]), 0), mu = mean(x) * sum(part == colnames(data_2nd)[1]), size = sum(part == colnames(data_2nd)[1]) *
+                                sf(mean(x), vf, vfit))) * (dnbinom(round(x[1] * sum(part == colnames(data_2nd)[1]) +
+                                                                           x[2] * sum(part == colnames(data_2nd)[2]), 0):0, mu = mean(x) * sum(part == colnames(data_2nd)[2]),
+                                                                   size = sum(part == colnames(data_2nd)[2]) * sf(mean(x), vf, vfit)))
               if (sum(p12) == 0)
                 0
-              else sum(p12[p12 <= p12[round(x[1] * sum(part == as.numeric(colnames(data_2nd)[1])), 0) +
+              else sum(p12[p12 <= p12[round(x[1] * sum(part == colnames(data_2nd)[1]), 0) +
                                         1]])/(sum(p12))
             })
             wilcox_pval <- pv
@@ -807,10 +807,10 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     cat(paste("run_outlier", "\n"))
     lvar  <- function(x,fit) 2**(coef(fit)[1] + log2(x)*coef(fit)[2] + coef(fit)[3] * log2(x)**2)
     lsize <- function(x,lvar,fit) x**2/(max(x + 1e-6,lvar(x,fit)) - x)
-    cluster <- as.numeric(names(table(part)[table(part) >= clustsize]))
+    cluster <- names(table(part)[table(part) >= clustsize])
     outliergenes <- function(rawdata,data, part, clustsize, feature_genes2, vfit, outminc,minexpr,pval_outlg, individualfit, g) {
       outlier_list <- list()
-      cluster <- as.numeric(names(table(part)[table(part) >= clustsize]))
+      cluster <- names(table(part)[table(part) >= clustsize])
       if (!is.null(g) && outminc == minexpr) {
         figenes <- g
       }
@@ -880,8 +880,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
       }
       return(outlier_list)
     }
-    outlier <- outliergenes(rawdata = rawdata,  part = part, clustsize = clustsize, outminc = outminc, minexpr = minexpr,feature_genes2 = feature_genes, vfit = vfit, pval_outlg = probthr, individualfit=individualfit,g=g)
-
+    outlier <- outliergenes(rawdata = rawdata,  part = part, clustsize = clustsize, outminc = outminc, minexpr = minexpr,feature_genes2 = feature_genes, vfit = vfit, pval_outlg = probthr, individualfit=individu
     outliernumb <- lapply(outlier, function(x) {
       x <- x[rownames(x) %in% feature_genes,]
       y <- colSums(x)
@@ -928,7 +927,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     }
     else { scale_factor <-  median(apply(rawdata, 2, sum));
     unimod_tab <- ndata *  scale_factor }
-    uni_part <- as.numeric(names(table(part)))[table(part) >= clustsize]
+    uni_part <- names(table(part))[table(part) >= clustsize]
     cat(paste("done_unimod_tab", "\n"))
   }
 
@@ -1032,8 +1031,8 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
         names(part) <- paste(batch, names(part), sep = "_")
       }
       cpart <- part
-      if ( is.factor(part)) { cpart <- as.numeric(as.character(cpart)); names(cpart) <- names(part)}
-      cluster <- as.numeric(names(table(cpart)[table(cpart) >= clustsize]))
+      if ( is.factor(part)) { cpart <- as.character(cpart); names(cpart) <- names(part)}
+      cluster <- names(table(cpart)[table(cpart) >= clustsize])
       cpart <- cpart[cpart %in% cluster]
       batch <- sub("\\_.+", "", names(cpart))
       batch_len <- unique(batch)
