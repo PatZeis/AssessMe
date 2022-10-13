@@ -880,7 +880,7 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
       }
       return(outlier_list)
     }
-    outlier <- outliergenes(rawdata = rawdata,  part = part, clustsize = clustsize, outminc = outminc, minexpr = minexpr,feature_genes2 = feature_genes, vfit = vfit, pval_outlg = probthr, individualfit=individu
+    outlier <- outliergenes(rawdata = rawdata,  part = part, clustsize = clustsize, outminc = outminc, minexpr = minexpr,feature_genes2 = feature_genes, vfit = vfit, pval_outlg = probthr, individualfit=individualfit,g=g)
     outliernumb <- lapply(outlier, function(x) {
       x <- x[rownames(x) %in% feature_genes,]
       y <- colSums(x)
