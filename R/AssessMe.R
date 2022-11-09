@@ -232,8 +232,10 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     else {
       if ( is.null(ndata)) stop("provide normalised data as ndata")
     }
-    rawdata <- Matrix(as.matrix(rawdata), sparse = T)
-    ndata <- Matrix(as.matrix(ndata), sparse = T)
+    if (class(rawdata) != "dgCMatrix") {	
+    rawdata <- Matrix(as.matrix(rawdata), sparse = T) }
+    if (class(ndata) != "dgCMatrix") {
+    ndata <- Matrix(as.matrix(ndata), sparse = T)}
     if (is.null(givefeatures)){  ### feature selection only RaceID	    
       if (sum( as.numeric(fselectRace) + as.numeric(fselectSeurat)) == 2) { stop("either feature selection RaceID or Seurat")}
       if (sum( as.numeric(fselectRace) + as.numeric(fselectSeurat)) == 1) {
@@ -489,9 +491,9 @@ cluster_assessment <- function(assessment_list=NULL, seuratobject =NULL, seurat_
     }
     #plan(multisession)
     position2 <- 1:length(max_cl)
-    if (binaclassi == "F1Score") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.numeric(max_cl))}
-    if (binaclassi == "Cohenkappa") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.numeric(max_cl), F1=F, Kap=T, MCC=F)}
-    if (binaclassi == "MCC") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.numeric(max_cl), F1=F,Kap=F, MCC=T)}
+    if (binaclassi == "F1Score") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.character(max_cl))}
+    if (binaclassi == "Cohenkappa") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.character(max_cl), F1=F, Kap=T, MCC=F)}
+    if (binaclassi == "MCC") {f1_score <- sapply(position2, getAUC, cutoff_data_table, part, as.character(max_cl), F1=F,Kap=F, MCC=T)}
 
     names(f1_score) <- rownames(cutoff_data_table)
     end_time <- Sys.time()
